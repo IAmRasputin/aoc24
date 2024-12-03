@@ -10,3 +10,8 @@
   (:nicknames :day1)
   (:import-from #:aoc24/utils :input))
 
+(defpackage #:aoc24/day2
+  (:use #:cl)
+  (:nicknames :day2)
+  (:import-from #:aoc24/utils :input))
+

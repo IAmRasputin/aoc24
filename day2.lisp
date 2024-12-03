@@ -1,0 +1,25 @@
+(in-package #:aoc24/day2)
+
+(defun cleaned-input ()
+  (let* ((raw-input (input 2))
+         (report-strings  (remove-if (lambda (s)
+                                       (string= "" s))
+                                     (uiop:split-string raw-input :separator '(#\Newline))))
+         (raw-reports (mapcar #'uiop:split-string report-strings))
+         (reports (mapcar (lambda (r)
+                            (mapcar #'parse-integer r))
+                          raw-reports)))
+    reports))
+
+(defun report-is-safe (report)
+  (if (> (length report) 1)
+      ()
+      t))
+
+(defun part-1 ()
+  (let ((reports (cleaned-input))
+        (safe-reports 0))
+    (loop for report in reports do
+          (when (report-is-safe report)
+            (incf safe-reports)))
+    safe-reports))
