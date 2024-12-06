@@ -8,6 +8,12 @@
                                          :initial-contents cleaned-rows)))
                   grid))
 
+(defun crossing (row col)
+  (list
+    (loop for r from (- row 1) upto (+ row 1)
+          for c from (- col 1) upto (+ col 1) collect (cons r c))
+    (loop for r from (+ row 1) downto (- row 1)
+          for c from (- col 1) upto (+ col 1) collect (cons r c))))
 (defun surrounding (row col)
   (list
     ; up
@@ -61,4 +67,51 @@
           (incf total (length found)))))
     total))
 
-(part-1)
+;; Eh this kinda sucks but also I don't care and I'm two days behind lmao
+(defun part-2 ()
+  (let ((num-rows (first (array-dimensions *input*)))
+        (num-cols (second (array-dimensions *input*)))
+        (total 0))
+    (dotimes (r num-rows)
+      (dotimes (c num-cols)
+        (let* ((possible-x (crossing r c)))
+          (when (and (every (lambda (c)
+                              (array-in-bounds-p *input* (car c) (cdr c)))
+                            (first possible-x))
+                     (every (lambda (c)
+                              (array-in-bounds-p *input* (car c) (cdr c)))
+                            (second possible-x))
+                     (or (equal 
+                           "SAM"
+                           (coerce 
+                             (make-array 3 :initial-contents 
+                                         (mapcar (lambda (coord)
+                                                   (aref *input* (car coord) (cdr coord)))
+                                                 (first possible-x)))
+                             'string))
+                         (equal 
+                           "MAS"
+                           (coerce 
+                             (make-array 3 :initial-contents 
+                                         (mapcar (lambda (coord)
+                                                   (aref *input* (car coord) (cdr coord)))
+                                                 (first possible-x)))
+                             'string)))
+                     (or (equal 
+                           "SAM"
+                           (coerce 
+                             (make-array 3 :initial-contents 
+                                         (mapcar (lambda (coord)
+                                                   (aref *input* (car coord) (cdr coord)))
+                                                 (second possible-x)))
+                             'string))
+                         (equal 
+                           "MAS"
+                           (coerce 
+                             (make-array 3 :initial-contents 
+                                         (mapcar (lambda (coord)
+                                                   (aref *input* (car coord) (cdr coord)))
+                                                 (second possible-x)))
+                             'string))))
+            (incf total)))))
+    total))
