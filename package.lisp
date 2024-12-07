@@ -25,3 +25,8 @@
   (:nicknames :day4)
   (:import-from #:aoc24/utils :input))
 
+(defpackage #:aoc24/day5
+  (:use #:cl)
+  (:nicknames :day5)
+  (:import-from #:aoc24/utils :input))
+
