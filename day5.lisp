@@ -19,12 +19,34 @@
                                       pages-string)))
                   (cons page-rules pages)))
 
-(defun relevant-rules (update)
-  (remove-if-not (lambda (rule)
-                   (every (lambda (c)
-                            (member c update))
-                          rule))
-                 (car *input*)))
+(defun list-swap (lst first-idx second-idx)
+  (let* ((list-copy (copy-list lst))
+         (first-temp (nth first-idx list-copy))
+         (second-temp (nth second-idx list-copy)))
+    (setf (nth second-idx list-copy) first-temp
+          (nth first-idx list-copy) second-temp)
+    list-copy))
+
+
+(defun fix-update (update)
+  (let ((to-fix (copy-list update))
+        (rules (relevant-rules update)))
+    (labels ((comp (x y)
+               (if (and (member (list y x) rules :test #'equal)
+                        (member (list x y) rules :test #'equal))
+                   t
+                   (member (list x y) rules :test #'equal))))
+      (sort to-fix #'comp))))
+
+(let ((rule-cache (make-hash-table :test #'equal)))
+  (defun relevant-rules (update)
+    (let ((hash (gethash update rule-cache)))
+      (or hash
+          (setf hash (remove-if-not (lambda (rule)
+                                      (every (lambda (c)
+                                               (member c update))
+                                             rule))
+                                    (car *input*)))))))
 
 (defun rule-met (rule update)
   (< (position (car rule) update) 
@@ -40,6 +62,11 @@
                    (update-compliant update))
                  (cdr *input*)))
 
+(defun all-noncompliant-updates ()
+  (remove-if (lambda (update)
+               (update-compliant update))
+             (cdr *input*)))
+
 (defun middle-page (update)
   (nth (floor (/ (length update) 2)) update))
 
@@ -47,4 +74,6 @@
   (apply #'+
          (mapcar #'middle-page (all-compliant-updates))))
 
-(apply #'+ (mapcar #'middle-page (all-compliant-updates)))
+(defun part-2 ()
+  (apply #'+
+         (mapcar #'middle-page (mapcar #'fix-update (all-noncompliant-updates)))))
