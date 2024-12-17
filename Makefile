@@ -1,5 +1,8 @@
 LISP ?= sbcl
 
+clean:
+	rm *.fasl
+
 1:
 	$(LISP) --noinform \
 		--load aoc24.asd \
@@ -41,6 +44,15 @@ LISP ?= sbcl
 	    --load aoc24.asd \
 		--eval '(asdf:load-system :aoc24)' \
 		--eval '(in-package :aoc24/day5)' \
+		--eval '(format t "~%~%Part 1 solution: ~d~%" (part-1))' \
+		--eval '(format t "Part 2 solution: ~d~%~%" (part-2))' \
+		--eval '(uiop:quit)'
+
+6:
+	$(LISP) --noinform \
+	    --load aoc24.asd \
+		--eval '(asdf:load-system :aoc24)' \
+		--eval '(in-package :aoc24/day6)' \
 		--eval '(format t "~%~%Part 1 solution: ~d~%" (part-1))' \
 		--eval '(format t "Part 2 solution: ~d~%~%" (part-2))' \
 		--eval '(uiop:quit)'
