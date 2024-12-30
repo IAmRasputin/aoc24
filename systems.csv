@@ -1,0 +1,3 @@
+cl-ansi-text.test, ghcr.io/ocicl/cl-ansi-text@sha256:974560cad1e9cdf2c62090598540bc57cc7de607822353bb8a314c7d9373ca17, cl-ansi-text-20240503-8b129d8/cl-ansi-text.test.asd
+cl-ansi-text, ghcr.io/ocicl/cl-ansi-text@sha256:974560cad1e9cdf2c62090598540bc57cc7de607822353bb8a314c7d9373ca17, cl-ansi-text-20240503-8b129d8/cl-ansi-text.asd
+cl-colors2, ghcr.io/ocicl/cl-colors2@sha256:ac080ad9219d5d62b4b54f685e0e6acf84e248a24b9ce330820ab42ee36aff64, cl-colors2-20230920-c3153b6/cl-colors2.asd

@@ -1,157 +1,138 @@
 (in-package #:aoc24/day6)
 
+;; haha wow this sucks, but I've been stuck here so I just want it to work, you know?
+;; this may have been a job for OOP after all
+(let (cached-input)
+  (defun cleaned-input ()
+    (or cached-input
+        (setf cached-input 
+              (let* ((raw-input (input 6))
+                     (raw-input-lines (remove "" (str:split #\Newline raw-input) :test #'equal)))
+                (make-array (list (length raw-input-lines)
+                                  (length (car raw-input-lines)))
+                            :initial-contents raw-input-lines))))))
 
-(defvar *input* (let* ((raw-input (input 6))
-                       (raw-input-lines (remove "" (str:split #\Newline raw-input) :test #'equal)))
-                  (make-array (list (length raw-input-lines)
-                                    (length (car raw-input-lines)))
-                              :initial-contents raw-input-lines)))
+(defclass room-state ()
+  ((floor-map :initform (cleaned-input)
+              :initarg :input-map)
+  (num-rows :accessor room-rows
+             :initarg :num-rows)
+   (num-cols :accessor room-cols
+             :initarg :num-cols)
+   (guard-row :accessor room-guard-row
+              :initarg :guard-row)
+   (guard-col :accessor room-guard-col
+              :initarg :guard-col)
+   (direction :initform :north
+              :initarg :direction
+              :accessor guard-direction)))
 
-(defvar *total-rows* (first (array-dimensions *input*)))
-(defvar *total-cols* (second (array-dimensions *input*)))
-(defvar *guard-row*)
-(defvar *guard-col*)
-(defvar *guard-start* (dotimes (r *total-rows*)
-                        (dotimes (c *total-cols*)
-                          (when (eq (aref *input* r c) #\^)
-                            (setf (aref *input* r c) #\.)
-                            (setf *guard-row* r
-                                  *guard-col* c)
-                            (return (cons r c))))))
+(defun make-room-state (&optional (input (cleaned-input)))
+  (let (guard-row guard-col
+         (total-rows (first (array-dimensions input)))
+         (total-cols (second (array-dimensions input))))
 
-(defvar *direction* :north)
-(defvar *spots-visited* (list (cons *guard-row* *guard-col*)))
+    (dotimes (r total-rows)
+      (dotimes (c total-cols)
+        (when (eq (aref input r c) #\^)
+          (setf guard-row r
+                guard-col c))))
 
-(defun reset ()
-  (setf *input* (let* ((raw-input (input 6))
-                         (raw-input-lines (remove "" (str:split #\Newline raw-input) :test #'equal)))
-                    (make-array (list (length raw-input-lines)
-                                      (length (car raw-input-lines)))
-                                :initial-contents raw-input-lines)))
+    (make-instance 'room-state
+                   :input-map input
+                   :num-rows (first (array-dimensions input))
+                   :num-cols (second (array-dimensions input))
+                   :guard-row guard-row
+                   :guard-col guard-col
+                   :direction :north)))
 
-  (setf *total-rows* (first (array-dimensions *input*)))
-  (setf *total-cols* (second (array-dimensions *input*)))
-  (setf *guard-start* (dotimes (r *total-rows*)
-                          (dotimes (c *total-cols*)
-                            (when (eq (aref *input* r c) #\^)
-                              (setf (aref *input* r c) #\.)
-                              (setf *guard-row* r
-                                    *guard-col* c)
-                              (return (cons r c))))))
-  (setf *direction* :north)
-  (setf *spots-visited* (list (cons *guard-row* *guard-col*))))
+(defmethod at ((obj room-state) row col)
+  (with-slots (floor-map)
+      obj
+    (when (array-in-bounds-p floor-map row col)
+      (case (aref floor-map row col)
+        (#\# :obstacle)
+        (#\. :empty)
+        (#\^ :guard)))))
 
-(defmacro with-fresh-state (&body body)
-  `(let* ((*input* (let* ((raw-input (input 6))
-                          (raw-input-lines (remove "" (str:split #\Newline raw-input) :test #'equal)))
-                     (make-array (list (length raw-input-lines)
-                                       (length (car raw-input-lines)))
-                                 :initial-contents raw-input-lines)))
+(defmethod current-location ((obj room-state))
+  (with-slots (guard-row guard-col direction)
+      obj
+    (list guard-row guard-col direction)))
 
-          (*total-rows* (first (array-dimensions *input*)))
-          (*total-cols* (second (array-dimensions *input*)))
-          (*guard-start* (dotimes (r *total-rows*)
-                           (dotimes (c *total-cols*)
-                             (when (eq (aref *input* r c) #\^)
-                               (setf (aref *input* r c) #\.)
-                               (setf *guard-row* r
-                                     *guard-col* c)
-                               (return (cons r c))))))
-          (*direction* :north)
-          (*spots-visited* (list (cons *guard-row* *guard-col*))))
-     ,@body))
-
-(defun turn () 
-  (setf *direction* (ccase *direction*
-                           (:north :east)
+(defmethod turn ((obj room-state)) 
+  (with-slots (direction)
+      obj
+    (setf direction (ccase direction
+               (:north :east)
                            (:east :south)
                            (:south :west)
-                           (:west :north))))
+                           (:west :north)))
+    (current-location obj)))
 
+(defmethod move ((obj room-state))
+  (with-slots (num-rows num-cols guard-row guard-col direction)
+      obj
+    (case direction
+      (:north (cond
+                ((zerop guard-row) :exit)
+                ((eq (at obj (- guard-row 1) guard-col) :obstacle) :blocked)
+                (t (decf guard-row)
+                   (current-location obj))))
+      (:east (cond
+               ((= guard-col (- num-cols 1)) :exit)
+               ((eq (at obj guard-row (1+ guard-col)) :obstacle) :blocked)
+               (t (incf guard-col)
+                  (current-location obj))))
+      (:south (cond
+                ((= guard-row (- num-rows 1)) :exit)
+                ((eq (at obj (+ guard-row 1) guard-col) :obstacle) :blocked)
+                (t (incf guard-row)
+                   (current-location obj))))
+      (:west (cond
+               ((zerop guard-col) :exit)
+               ((eq (at obj guard-row (- guard-col 1)) :obstacle) :blocked)
+               (t (decf guard-col)
+                  (current-location obj)))))))
 
-(defun move ()
-  (case *direction*
-    (:north (cond
-              ((= *guard-row* 0) :exit)
-              ((char= (aref *floor-map* (- *guard-row* 1) *guard-col*) #\#) :blocked)
-              (t (progn
-                   (decf *guard-row*)
-                   (pushnew (cons *guard-row* *guard-col*) *spots-visited* :test #'equal)
-                   (cons *guard-row* *guard-col*)))))
-    (:east (cond
-             ((= *guard-col* (- *total-cols* 1)) :exit)
-             ((char= (aref *floor-map* *guard-row* (1+ *guard-col*)) #\#) :blocked)
-             (t (progn
-                  (incf *guard-col*)
-                  (pushnew (cons *guard-row* *guard-col*) *spots-visited* :test #'equal)
-                  (cons *guard-row* *guard-col*)))))
-    (:south (cond
-              ((= *guard-row* (- *total-rows* 1)) :exit)
-              ((char= (aref *floor-map* (+ *guard-row* 1) *guard-col*) #\#) :blocked)
-              (t (progn
-                   (incf *guard-row*)
-                   (pushnew (cons *guard-row* *guard-col*) *spots-visited* :test #'equal)
-                   (cons *guard-row* *guard-col*)))))
-    (:west (cond
-             ((= *guard-col* 0) :exit)
-             ((char= (aref *floor-map* *guard-row* (- *guard-col* 1)) #\#) :blocked)
-             (t (progn
-                  (decf *guard-col*)
-                  (pushnew (cons *guard-row* *guard-col*) *spots-visited* :test #'equal)
-                  (cons *guard-row* *guard-col*)))))))
-
-(defun debug-log ()
-  (labels ((at (row col)
-             (if (array-in-bounds-p *input* row col)
-                 (if (or (char= #\. (aref *input* row col))
-                         (char= #\^ (aref *input* row col)))
-                     #\.
-                     (aref *input* row col))
-                 #\Space)))
-    (format t "---~%")
-    (format t "~a~a~a~%" 
-            (at (- *guard-row* 1) (- *guard-col* 1))
-            (at (- *guard-row* 1) *guard-col*)
-            (at (- *guard-row* 1) (+ *guard-col* 1)))
-    (format t "~a~a~a~%"
-            (at *guard-row* (- *guard-col* 1))
-            (case *direction*
-              (:north "^")
-              (:south "v")
-              (:east ">")
-              (:west "<"))
-            (at *guard-row* (+ *guard-col* 1)))
-    (format t "~a~a~a~%"
-            (at (+ *guard-row* 1) (- *guard-col* 1))
-            (at (+ *guard-row* 1) *guard-col*)
-            (at (+ *guard-row* 1) (+ *guard-col* 1)))
-    (format t "---~%")
-    (format t "(~d, ~d) (visited: ~d)~%" *guard-row* *guard-col* (length *spots-visited*))))
-
-(defun guard-step ()
-  (let ((result (move)))
+(defmethod guard-step ((obj room-state))
+  (let ((result (move obj)))
     (case result
-      (:exit :exit)
-      (:blocked (turn))
+      (:blocked (turn obj))
       (t result))))
 
-(defun is-loop (obst-row obst-col)
-  (with-fresh-state
-    (unless (and (eq obst-row *guard-row*)
-                 (eq obst-col *guard-col*))
-      (setf (aref *input* obst-row obst-col) #\#)
-      (do ((result (guard-step) (guard-step)))
-          ((member result '(:exit :loop)) (eq result :loop))))))
+(defun guard-visited-spots (state)
+  (do* ((spots-visited (list (list (room-guard-row state) (room-guard-col state))))
+        (result (guard-step state) (guard-step state)))
+      ((eq result :exit) spots-visited)
+    (when (consp result)
+      (pushnew (list (first result) (second result)) spots-visited :test #'equal))))
 
 (defun part-1 ()
-  (do ((result (guard-step) (guard-step)))
-      ((eq result :exit) (length *spots-visited*))))
+  (let* ((state (make-room-state))
+         (spots-visited (guard-visited-spots state)))
+    (length spots-visited)))
 
+(defun obstruction-causes-loop (state row col)
+  (unless (and (= row (room-guard-row state))
+               (= col (room-guard-col state)))
+    (let ((raw-input (cleaned-input)))
+      (setf (aref raw-input row col) #\#)
+      (do* ((state (make-room-state raw-input))
+            (spots-visited (list (current-location state)))
+            (result (guard-step state) (guard-step state))
+            (is-loop (member result spots-visited :test #'equal)
+                     (member result spots-visited :test #'equal)))
+          ((or is-loop (eq result :exit)) is-loop)
+        (pushnew result spots-visited :test #'equal)))))
+ 
 (defun part-2 ()
-  (let ((loops 0))
-    (dotimes (r *total-rows*)
-      (dotimes (c *total-cols*)
-        (when (is-loop r c) 
-          (incf loops))))))
-
-(part-2)
+  (let ((floor-map (make-room-state))
+        (loop-count 0))
+    (loop for r below (room-rows floor-map) do
+          (loop for c below (room-cols floor-map) do
+                (if (obstruction-causes-loop floor-map r c)
+                    (progn
+                      (incf loop-count)
+                      loop-count))))
+    loop-count))
