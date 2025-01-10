@@ -145,18 +145,36 @@
           (pushnew (list (first result) (second result))
                    spots-visited :test #'equal))))))
 
-(defun debug-log (state &optional visited)
-  (labels ((spot-at (r c &optional visited)
-             ))
-    (format t
-            "~a~a~a~%~a~a~a~%~a~a~a"
-            ())))
+;;(defun debug-log (state &optional visited)
+;;  (labels ((spot-at (r c &optional visited)
+;;             (if (array-in-bounds-p (room-input-map state) r c)
+;;                 (let ((found (at state r c)))
+;;                   (cond
+;;                     ((eq found :obstacle) "#")
+;;                     ((eq found :empty) (if (member )))))
+;;                 " ")))
+;;    (format t
+;;            "~a~a~a~%~a~a~a~%~a~a~a~%~%"
+;;            (spot-at (- (room-guard-row state) 1) (- (room-guard-col state) 1) visited)
+;;            (spot-at (- (room-guard-row state) 1) (room-guard-col state) visited)
+;;            (spot-at (- (room-guard-row state) 1) (1+ (room-guard-col state)) visited)
+;;            (spot-at (room-guard-row state) (- (room-guard-col state) 1) visited)
+;;            (case (guard-direction state)
+;;              (:north "^")
+;;              (:south "v")
+;;              (:east ">")
+;;              (:west "<"))
+;;            (spot-at (room-guard-row state) (1+ (room-guard-col state)) visited)
+;;            (spot-at (1+ (room-guard-row state)) (- (room-guard-col state) 1) visited)
+;;            (spot-at (1+ (room-guard-row state)) (room-guard-col state) visited)
+;;            (spot-at (1+ (room-guard-row state)) (1+ (room-guard-col state)) visited))))
 
 (defun part-1 ()
   (let* ((state (make-room-state))
          (spots-visited (guard-visited-spots state)))
     (length spots-visited)))
 
+;; Doesn't work, idk lol I'll come back to it
 (defun part-2 ()
   (let* ((root-state (make-room-state))
          (root-path (guard-visited-spots (make-room-state root-state)))
